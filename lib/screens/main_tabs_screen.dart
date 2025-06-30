@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../habit_provider.dart';
 import 'mascot_screen.dart';
 import 'habits_list_screen.dart';
+import 'weekly_report_screen.dart';
 
 class MainTabsScreen extends StatefulWidget {
   const MainTabsScreen({super.key});
@@ -22,12 +23,12 @@ class _MainTabsScreenState extends State<MainTabsScreen>
     {
       'page': const MascotScreen(),
       'title': 'Habitóide',
-      'icon': Icons.pets_rounded,
-      'activeIcon': Icons.pets,
+      'icon': Icons.home_rounded,
+      'activeIcon': Icons.home_filled,
     },
     {
       'page': const HabitsListScreen(),
-      'title': 'Hábitos',
+      'title': 'Meus Hábitos',
       'icon': Icons.checklist_rtl_rounded,
       'activeIcon': Icons.checklist_rtl_rounded,
     },
@@ -37,7 +38,7 @@ class _MainTabsScreenState extends State<MainTabsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: _pages.length, vsync: this, initialIndex: 0);
-    _tabController.addListener(_handleTabSelection); 
+    _tabController.addListener(_handleTabSelection);
   }
 
   @override
@@ -49,7 +50,7 @@ class _MainTabsScreenState extends State<MainTabsScreen>
 
   void _handleTabSelection() {
     if (_tabController.indexIsChanging || _tabController.index != _selectedPageIndex) {
-      if (mounted) { 
+      if (mounted) {
         setState(() {
           _selectedPageIndex = _tabController.index;
         });
@@ -113,7 +114,21 @@ class _MainTabsScreenState extends State<MainTabsScreen>
       appBar: AppBar(
         title: Text(_pages[_selectedPageIndex]['title'] as String),
         actions: [
-          if (_selectedPageIndex == 1)
+          // Ícones que só aparecem na aba de Hábitos
+          if (_selectedPageIndex == 1) ...[
+            // NOVO: Ícone do Relatório
+            Tooltip(
+              message: 'Relatório Semanal',
+              child: IconButton(
+                icon: Icon(Icons.bar_chart_rounded, color: colorScheme.primary),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (ctx) => const WeeklyReportScreen()),
+                  );
+                },
+              ),
+            ),
+            // Ícone de Reset Diário
             Tooltip(
               message: 'Iniciar Novo Dia',
               child: IconButton(
@@ -121,6 +136,7 @@ class _MainTabsScreenState extends State<MainTabsScreen>
                 onPressed: () => _showResetDialog(context),
               ),
             ),
+          ],
         ],
       ),
       body: TabBarView(

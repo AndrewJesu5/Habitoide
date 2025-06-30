@@ -1,14 +1,22 @@
 // lib/habit_provider.dart
-
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'habit.dart';
+
+class HabitCompletion {
+  final String habitId;
+  final DateTime date;
+
+  HabitCompletion({required this.habitId, required this.date});
+}
 
 enum MascotState { happy, neutral, sad }
 
 class HabitProvider with ChangeNotifier {
   final List<Habit> _habits = [];
   final Uuid _uuid = const Uuid();
+
+  final List<HabitCompletion> _completionHistory = [];
 
   int _currentLevel = 1;
   double _currentXp = 0.0;
@@ -19,13 +27,17 @@ class HabitProvider with ChangeNotifier {
   double get xpToNextLevel => _xpToNextLevel;
 
   List<Habit> get habits => List.unmodifiable(_habits);
+  List<HabitCompletion> get completionHistory => List.unmodifiable(_completionHistory); 
+
   int get goodHabitsDoneCount => _habits.where((h) => h.type == HabitType.good && h.isDoneToday).length;
   int get totalGoodHabitsCount => _habits.where((h) => h.type == HabitType.good).length;
   int get badHabitsDoneCount => _habits.where((h) => h.type == HabitType.bad && h.isDoneToday).length;
   int get totalBadHabitsCount => _habits.where((h) => h.type == HabitType.bad).length;
 
   MascotState get mascotState {
-    if (totalGoodHabitsCount == 0 && totalBadHabitsCount == 0) return MascotState.neutral;
+    if (totalGoodHabitsCount == 0 && totalBadHabitsCount == 0) {
+      return MascotState.neutral;
+    }
     double goodHabitRatio = totalGoodHabitsCount > 0 ? goodHabitsDoneCount / totalGoodHabitsCount : 1.0;
     double badHabitPenalty = totalBadHabitsCount > 0 ? badHabitsDoneCount / totalBadHabitsCount : 0.0;
     double effectiveScore = (goodHabitRatio * 100) - (badHabitPenalty * 50);
@@ -65,9 +77,7 @@ class HabitProvider with ChangeNotifier {
   }
 
   void addHabit(String name, HabitType type, double xpValue) {
-    if (name.trim().isEmpty || xpValue < 0) {
-      return;
-    }
+    if (name.trim().isEmpty || xpValue < 0) { return; }
     final newHabit = Habit(
       id: _uuid.v4(),
       name: name.trim(),
@@ -80,11 +90,11 @@ class HabitProvider with ChangeNotifier {
 
   void toggleHabitStatus(String habitId) {
     final habitIndex = _habits.indexWhere((h) => h.id == habitId);
-    if (habitIndex == -1) return;
+    if (habitIndex == -1) { return; }
 
     final habit = _habits[habitIndex];
     bool preToggleDoneState = habit.isDoneToday;
-    _habits[habitIndex].isDoneToday = !habit.isDoneToday;
+    habit.isDoneToday = !habit.isDoneToday;
 
     if (habit.type == HabitType.good) {
       if (habit.isDoneToday && !preToggleDoneState) {
@@ -92,27 +102,34 @@ class HabitProvider with ChangeNotifier {
         _checkForLevelUp();
       } else if (!habit.isDoneToday && preToggleDoneState) {
         _currentXp -= habit.xpYield;
-        if (_currentXp < 0) _currentXp = 0;
+        if (_currentXp < 0) { _currentXp = 0; }
       }
     }
+
+    final today = DateTime.now();
+    bool isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+    if (habit.isDoneToday) {
+      if (!_completionHistory.any((c) => c.habitId == habitId && isSameDay(c.date, today))) {
+        _completionHistory.add(HabitCompletion(habitId: habitId, date: today));
+      }
+    } else {
+      _completionHistory.removeWhere((c) => c.habitId == habitId && isSameDay(c.date, today));
+    }
+    
     notifyListeners();
   }
 
   void removeHabit(String habitId) {
     _habits.removeWhere((h) => h.id == habitId);
+    _completionHistory.removeWhere((c) => c.habitId == habitId);
     notifyListeners();
   }
 
   void resetDailyHabits() {
-    bool changed = false;
-    for (int i = 0; i < _habits.length; i++) {
-      if (_habits[i].isDoneToday) {
-        _habits[i].isDoneToday = false;
-        changed = true;
-      }
+    for (var habit in _habits) {
+      habit.isDoneToday = false;
     }
-    if (changed) {
-      notifyListeners();
-    }
+    notifyListeners();
   }
 }
