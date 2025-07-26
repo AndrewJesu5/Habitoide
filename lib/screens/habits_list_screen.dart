@@ -15,19 +15,16 @@ class HabitsListScreen extends StatefulWidget {
 class _HabitsListScreenState extends State<HabitsListScreen> {
   final _formKey = GlobalKey<FormState>();
   final _habitNameController = TextEditingController();
-  final _habitXpController = TextEditingController();
   HabitType _selectedHabitType = HabitType.good;
 
   @override
   void dispose() {
     _habitNameController.dispose();
-    _habitXpController.dispose();
     super.dispose();
   }
 
   void _resetAddHabitForm() {
     _habitNameController.clear();
-    _habitXpController.clear();
     if (mounted) {
       setState(() {
         _selectedHabitType = HabitType.good;
@@ -93,7 +90,7 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                           return DropdownMenuItem<HabitType>(
                             value: type,
                             child: Text(
-                              type == HabitType.good ? 'Hábito Bom (Ganha XP)' : 'Hábito Ruim (Afeta Mascote)',
+                              type == HabitType.good ? 'Hábito Bom' : 'Hábito Ruim',
                               style: TextStyle(color: type == HabitType.good ? Colors.green.shade700 : Colors.red.shade700),
                             ),
                           );
@@ -104,27 +101,6 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                               _selectedHabitType = newValue;
                             });
                           }
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _habitXpController,
-                        decoration: InputDecoration(
-                          labelText: 'XP do Hábito (para hábitos bons)',
-                          hintText: 'Ex: 20',
-                          prefixIcon: Icon(Icons.star_outline_rounded, color: Colors.deepPurple.shade300),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                             _habitXpController.text = '0';
-                            return null;
-                          }
-                          final xp = int.tryParse(value);
-                          if (xp == null || xp < 0) {
-                            return 'O XP deve ser um número igual ou maior que zero.';
-                          }
-                          return null;
                         },
                       ),
                     ],
@@ -146,13 +122,9 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       final habitName = _habitNameController.text.trim();
-                      final xp = double.tryParse(_habitXpController.text.isEmpty ? '0' : _habitXpController.text) ?? 0;
-
                       Provider.of<HabitProvider>(context, listen: false)
-                          .addHabit(habitName, _selectedHabitType, xp);
-                      
+                          .addHabit(habitName, _selectedHabitType);
                       Navigator.of(ctx).pop();
-                      
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('Hábito "$habitName" adicionado!'),
@@ -230,7 +202,6 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final habitProvider = Provider.of<HabitProvider>(context);
@@ -267,12 +238,12 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
           ),
           Expanded(
             child: allHabits.isEmpty
-                ? _buildEmptyState(context)
+                ? _buildEmptyState()
                 : CustomScrollView(
                     physics: const BouncingScrollPhysics(),
                     slivers: [
-                      if (goodHabits.isNotEmpty) _buildHabitSection(context, 'Hábitos Positivos (Ganham XP)', goodHabits, habitProvider, Colors.green.shade700),
-                      if (badHabits.isNotEmpty) _buildHabitSection(context, 'Hábitos a Evitar (Afetam Mascote)', badHabits, habitProvider, Colors.red.shade600),
+                      if (goodHabits.isNotEmpty) _buildHabitSection('Hábitos Positivos', goodHabits, habitProvider, Colors.green.shade700),
+                      if (badHabits.isNotEmpty) _buildHabitSection('Hábitos a Evitar', badHabits, habitProvider, Colors.red.shade600),
                       const SliverToBoxAdapter(child: SizedBox(height: 100)),
                     ],
                   ),
@@ -289,35 +260,33 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+
+  Widget _buildEmptyState() {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(30.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.space_dashboard_outlined, size: 80, color: colorScheme.primary.withAlpha((0.5 * 255).round())),
+            Icon(Icons.space_dashboard_outlined, size: 80, color: Theme.of(context).colorScheme.primary.withAlpha((0.5 * 255).round())),
             const SizedBox(height: 20),
             Text(
               'Sua lista de hábitos está vazia!',
-              style: textTheme.titleLarge?.copyWith(color: colorScheme.onSurface.withAlpha((0.8 * 255).round())),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha((0.8 * 255).round())),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               'Clique no botão "+" abaixo para adicionar seu primeiro hábito e começar a construir uma rotina incrível.',
               textAlign: TextAlign.center,
-              style: textTheme.bodyMedium?.copyWith(color: colorScheme.onSurface.withAlpha((0.6 * 255).round())),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurface.withAlpha((0.6 * 255).round())),
             ),
           ],
         ),
       ));
   }
 
-
-  Widget _buildHabitSection(BuildContext context, String title, List<Habit> sectionHabits, HabitProvider habitProvider, Color titleColor) {
+  Widget _buildHabitSection(String title, List<Habit> sectionHabits, HabitProvider habitProvider, Color titleColor) {
     final textTheme = Theme.of(context).textTheme;
     return SliverList(
       delegate: SliverChildListDelegate([
@@ -327,25 +296,20 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
         ),
         ...sectionHabits.map((habit) => Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: _buildHabitItem(context, habit, habitProvider),
+              child: _buildHabitItem(habit, habitProvider),
             )),
       ]),
     );
   }
 
-
-  Widget _buildHabitItem(BuildContext context, Habit habit, HabitProvider habitProvider) {
+  Widget _buildHabitItem(Habit habit, HabitProvider habitProvider) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     bool isGoodHabit = habit.type == HabitType.good;
     Color habitColor = isGoodHabit ? Colors.green.shade600 : Colors.red.shade500;
 
-    String subtitleText;
-    if (isGoodHabit) {
-      subtitleText = habit.xpYield > 0 ? '+${habit.xpYield.toStringAsFixed(0)} XP' : 'Melhora mascote';
-    } else {
-      subtitleText = 'Afeta mascote'; // Ou mostre a "gravidade" se `xpYield` for usado para isso em hábitos ruins
-    }
+    String subtitleText = isGoodHabit ? 'Hábito Bom' : 'Hábito Ruim';
+    IconData subtitleIcon = isGoodHabit ? Icons.add_reaction_outlined : Icons.mood_bad_outlined;
 
     return Card(
       child: ListTile(
@@ -371,14 +335,16 @@ class _HabitsListScreenState extends State<HabitsListScreen> {
                 : colorScheme.onSurface,
           ),
         ),
-        subtitle: Text( // Subtítulo atualizado para mostrar XP ou efeito no mascote
-          subtitleText,
-          style: textTheme.bodySmall?.copyWith(
-              color: habit.isDoneToday && isGoodHabit
-                  ? habitColor.withAlpha((0.6 * 255).round())
-                  : habitColor.withAlpha((0.9 * 255).round()),
-              fontWeight: FontWeight.w500
+        subtitle: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(subtitleIcon, size: 14, color: Colors.grey.shade600),
+            const SizedBox(width: 4),
+            Text(
+              subtitleText,
+              style: textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
             ),
+          ],
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline_rounded,

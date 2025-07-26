@@ -1,4 +1,5 @@
 // lib/flame_mascot/mascot_game.dart
+
 import 'dart:ui' as ui show Color;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -8,20 +9,14 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 
 import '../habit_provider.dart';
 
-// Enum para estados de animação simples (ex: piscar, mexer orelha)
 enum SimpleAnimationStateKey { normal, active }
-
-// Enum para as expressões visuais do mascote
 enum MascotExpression { neutral, happy, sad }
 
-// Componente do Personagem Mascote
 class MascotCharacter extends PositionComponent with HasGameReference<MascotGame> {
-  // --- Configurações Visuais Base ---
   static const double originalFrameSize = 40.0;
-  static const double scaleFactor = 5.0;
+  static const double scaleFactor = 9.0;
   static final Vector2 characterDisplaySize = Vector2.all(originalFrameSize * scaleFactor);
 
-  // --- Componentes das Partes do Mascote ---
   SpriteComponent? body;
   SpriteComponent? currentOpenEyes;
   SpriteComponent? eyesClosed;
@@ -34,26 +29,22 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
   SpriteComponent? staticTear;
   SpriteAnimationComponent? animatedTearComponent;
 
-  // --- Sprites Pré-carregados ---
   Sprite? _spriteEyeOpenNormal;
   Sprite? _spriteEyeOpenHappy;
   Sprite? _spriteEyeClosed;
   Sprite? _spriteEarsSad;
 
-  // --- Timers ---
   Timer? blinkTimer;
   Timer? earWiggleTimer;
   Timer? tailAnimationActivationTimer;
   Timer? tearAnimationActivationTimer;
 
-  // --- Controle Interno ---
   bool _assetsLoadedSuccessfully = true;
   bool _isTailAnimatingCurrently = false;
   bool _isTearAnimatingCurrently = false;
   MascotExpression _currentExpression = MascotExpression.neutral;
   bool _isCurrentlyBlinking = false;
 
-  // --- Definição dos Nomes dos Assets ---
   final String _eyesOpenAsset = 'olhos_abertos.png';
   final String _eyesClosedAsset = 'olhos_fechados.png';
   final String _eyesHappyAsset = 'olhos_felizes.png';
@@ -88,14 +79,11 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
     anchor = Anchor.center;
 
     try {
-      // Prioridades de renderização (menor = desenhado primeiro/mais atrás)
-      const int tailPriority = -1;
-      const int bodyPriority = 0;
-      const int outfitPriority = 1;
-      const int mouthPriority = 2;
-      const int eyesPriority = 3;
-      const int earsPriority = 4;
       const int tearPriority = 5;
+      const int earsPriority = 4;
+      const int eyesPriority = 3;
+      const int bodyPriority = 0;
+      const int tailPriority = -1;
       
       final Paint pixelPaint = Paint()..filterQuality = FilterQuality.none;
 
@@ -103,52 +91,52 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
       body = SpriteComponent(sprite: bodySprite, size: characterDisplaySize, anchor: Anchor.center, position: size / 2, paint: pixelPaint, priority: bodyPriority);
       add(body!);
 
-      final outfitSprite = await _loadSafeSprite('roupa.png');
-      outfit = SpriteComponent(sprite: outfitSprite, size: characterDisplaySize, anchor: Anchor.center, position: size / 2, paint: pixelPaint, priority: outfitPriority);
-      add(outfit!);
       
       await _updateMouthSprite("neutra");
 
-      // Carrega todos os sprites de olhos e orelhas tristes
       _spriteEyeOpenNormal = await _loadSafeSprite(_eyesOpenAsset);
       _spriteEyeOpenHappy = await _loadSafeSprite(_eyesHappyAsset);
       _spriteEyeClosed = await _loadSafeSprite(_eyesClosedAsset);
-      _spriteEarsSad = await _loadSafeSprite(_earsSadAsset);
 
-      // Configura os componentes de olhos
       currentOpenEyes = SpriteComponent(
         sprite: _spriteEyeOpenNormal, size: characterDisplaySize, anchor: Anchor.center, position: size / 2,
         paint: pixelPaint, priority: eyesPriority,
       );
       add(currentOpenEyes!);
+
       eyesClosed = SpriteComponent(
         sprite: _spriteEyeClosed, size: characterDisplaySize, anchor: Anchor.center, position: size / 2,
         paint: pixelPaint, priority: eyesPriority,
       );
 
-      // Configura os componentes de orelhas
       final earsPosASprite = await _loadSafeSprite(_earsPosAAsset);
       final earsPosBSprite = await _loadSafeSprite(_earsPosBAsset);
+      _spriteEarsSad = await _loadSafeSprite(_earsSadAsset);
+
       final earsIdleAnim = SpriteAnimation.spriteList([earsPosASprite], stepTime: 1, loop: true);
       final earsWiggleAnim = SpriteAnimation.spriteList([earsPosBSprite, earsPosASprite], stepTime: 0.25, loop: false);
+      
       earsAnimationGroup = SpriteAnimationGroupComponent<SimpleAnimationStateKey>(
         animations: { SimpleAnimationStateKey.normal: earsIdleAnim, SimpleAnimationStateKey.active: earsWiggleAnim },
         current: SimpleAnimationStateKey.normal, size: characterDisplaySize, anchor: Anchor.center, position: size / 2,
         paint: pixelPaint, priority: earsPriority,
       );
+      
       earsSadStatic = SpriteComponent(
         sprite: _spriteEarsSad, size: characterDisplaySize, anchor: Anchor.center, position: size / 2,
         paint: pixelPaint, priority: earsPriority,
       );
+      
       add(earsAnimationGroup!);
 
-      // Configura os componentes do rabo
+
       final staticTailSpriteInstance = await _loadSafeSprite(_staticTailAsset);
       staticTail = SpriteComponent(
         sprite: staticTailSpriteInstance, size: characterDisplaySize, anchor: Anchor.center,
         position: size / 2, paint: pixelPaint, priority: tailPriority,
       );
       add(staticTail!);
+
       final List<Sprite> tailAnimationSpriteList = [];
       for (String frameAsset in _tailAnimationFramesAssets) {
         tailAnimationSpriteList.add(await _loadSafeSprite(frameAsset));
@@ -160,12 +148,12 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
         position: staticTail!.position, paint: pixelPaint, priority: tailPriority,
       );
 
-      // Configura os componentes da lágrima
       final staticTearSpriteInstance = await _loadSafeSprite(_staticTearAsset);
       staticTear = SpriteComponent(
         sprite: staticTearSpriteInstance, size: characterDisplaySize, anchor: Anchor.center,
         position: size / 2, paint: pixelPaint, priority: tearPriority,
       );
+
       final List<Sprite> tearAnimationSpriteList = [];
       for (String frameAsset in _tearAnimationFramesAssets) {
         tearAnimationSpriteList.add(await _loadSafeSprite(frameAsset));
@@ -180,6 +168,7 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
       _assetsLoadedSuccessfully = true;
 
     } catch (e) {
+      if (kDebugMode) { print("!!! ERRO FATAL AO CARREGAR ASSETS: $e"); }
       _assetsLoadedSuccessfully = false;
       return;
     }
@@ -189,6 +178,32 @@ class MascotCharacter extends PositionComponent with HasGameReference<MascotGame
       earWiggleTimer = Timer(13.0 + math.Random().nextDouble() * 4.0, onTick: _onEarWiggleTick, repeat: true)..start();
       tailAnimationActivationTimer = Timer(8.0 + math.Random().nextDouble() * 4.0, onTick: _onTailAnimationTick, repeat: true)..start();
       tearAnimationActivationTimer = Timer(5.0 + math.Random().nextDouble() * 2.0, onTick: _onTearAnimationTick, repeat: true)..start();
+    }
+  }
+
+  Future<void> updateOutfit(String outfitAsset) async {
+    if (outfit != null && outfit!.isMounted) {
+      remove(outfit!);
+      outfit = null;
+    }
+
+    if (outfitAsset != 'default' && outfitAsset.isNotEmpty) {
+      try {
+        final outfitSprite = await _loadSafeSprite(outfitAsset);
+        outfit = SpriteComponent(
+          sprite: outfitSprite,
+          size: characterDisplaySize,
+          anchor: Anchor.center,
+          position: size / 2,
+          paint: Paint()..filterQuality = FilterQuality.none,
+          priority: 1,
+        );
+        add(outfit!);
+      } catch (e) {
+        if (kDebugMode) {
+          print("Erro ao carregar o traje: $outfitAsset - $e");
+        }
+      }
     }
   }
 
@@ -345,6 +360,7 @@ class MascotGame extends FlameGame {
   late MascotCharacter mascot;
   bool _mascotInitialized = false;
   MascotState? _lastProviderState;
+  String? _lastOutfitAsset;
 
   MascotGame({required this.habitProvider});
 
@@ -358,6 +374,10 @@ class MascotGame extends FlameGame {
       mascot = MascotCharacter();
       mascot.position = size / 2;
       await add(mascot);
+      
+      _lastOutfitAsset = habitProvider.currentOutfit;
+      await mascot.updateOutfit(_lastOutfitAsset!);
+
       _mascotInitialized = true;
     } catch (e) { 
       if (kDebugMode) { print("Erro ao inicializar MascotGame: $e"); }
@@ -370,6 +390,7 @@ class MascotGame extends FlameGame {
     super.update(dt);
     if (!_mascotInitialized) { return; }
 
+    // Atualiza a expressão do mascote
     final currentState = habitProvider.mascotState;
     if (_lastProviderState != currentState) {
       _lastProviderState = currentState;
@@ -384,6 +405,12 @@ class MascotGame extends FlameGame {
       if (mascot._currentExpression != targetExpression) {
         mascot.setExpression(targetExpression);
       }
+    }
+    
+    final currentOutfit = habitProvider.currentOutfit;
+    if (_lastOutfitAsset != currentOutfit) {
+      _lastOutfitAsset = currentOutfit;
+      mascot.updateOutfit(currentOutfit);
     }
   }
 }

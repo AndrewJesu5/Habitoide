@@ -12,6 +12,7 @@ import '../habit_provider.dart';
 class WeeklyReportScreen extends StatelessWidget {
   const WeeklyReportScreen({super.key});
 
+  // Função auxiliar para comparar se duas datas são no mesmo dia
   bool _isSameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
@@ -21,6 +22,7 @@ class WeeklyReportScreen extends StatelessWidget {
     final allHabits = habitProvider.habits;
     final history = habitProvider.completionHistory;
 
+    // --- Processamento de Dados ---
     final today =
         DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     final last7Days = List.generate(7, (i) => today.subtract(Duration(days: i)))
@@ -35,6 +37,7 @@ class WeeklyReportScreen extends StatelessWidget {
       for (var i = 1; i <= 7; i++) i: 0
     };
 
+    // Inicializa os contadores para todos os hábitos existentes
     for (var habit in allHabits) {
       if (habit.type == HabitType.good) {
         goodHabitCompletionCount[habit.id] = 0;
@@ -43,16 +46,17 @@ class WeeklyReportScreen extends StatelessWidget {
       }
     }
 
+    // Filtra o histórico para pegar apenas as conclusões da última semana
     final completionsThisWeek = history
         .where((c) => c.date.isAfter(today.subtract(const Duration(days: 7))));
 
+    // Processa o histórico da semana
     for (var completion in completionsThisWeek) {
       final habit = allHabits.firstWhere((h) => h.id == completion.habitId,
           orElse: () => Habit(
               id: '',
               name: 'Hábito Removido',
-              type: HabitType.good,
-              xpYield: 0));
+              type: HabitType.good));
       if (habit.id.isEmpty) {
         continue;
       }
@@ -70,6 +74,7 @@ class WeeklyReportScreen extends StatelessWidget {
       }
     }
 
+    // Calcula a sequência atual de dias com hábitos bons
     int currentStreak = 0;
     for (int i = 0; i < 365; i++) {
       final dateToCheck = today.subtract(Duration(days: i));
@@ -77,8 +82,8 @@ class WeeklyReportScreen extends StatelessWidget {
           _isSameDay(c.date, dateToCheck) &&
           allHabits
                   .firstWhere((h) => h.id == c.habitId,
-                      orElse: () => Habit(
-                          id: '', name: '', type: HabitType.bad, xpYield: 0))
+                      orElse: () =>
+                          Habit(id: '', name: '', type: HabitType.bad))
                   .type ==
               HabitType.good)) {
         currentStreak++;
@@ -87,6 +92,7 @@ class WeeklyReportScreen extends StatelessWidget {
       }
     }
 
+    // Encontra o melhor dia da semana
     String bestDay = "N/A";
     if (completionsByWeekday.values.any((count) => count > 0)) {
       final bestDayWeekday = completionsByWeekday.entries
@@ -101,6 +107,7 @@ class WeeklyReportScreen extends StatelessWidget {
               RegExp(r'^\w'), (match) => match[0]!.toUpperCase());
     }
 
+    // Ordena os hábitos por contagem para os cards de análise
     final sortedGoodHabits = goodHabitCompletionCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final sortedBadHabits = badHabitCompletionCount.entries.toList()
@@ -202,21 +209,6 @@ class WeeklyReportScreen extends StatelessWidget {
 
   Widget _buildSummaryCard(
       BuildContext context, int good, int bad, int streak, String bestDay) {
-    final firstRowItems = [
-      _buildStatItem(context, Icons.check_circle,
-          Colors.green.shade600, good.toString(), 'Bons Concluídos'),
-      _buildStatItem(context, Icons.local_fire_department,
-          Colors.orange.shade700, streak.toString(), 'Dias em Sequência'),
-    ];
-
-    final secondRowItems = [
-      _buildStatItem(context, Icons.emoji_events,
-          Colors.purple.shade600, bestDay, 'Melhor Dia'),
-      if (bad > 0)
-        _buildStatItem(context, Icons.cancel, Colors.red.shade600,
-            bad.toString(), 'Ruins Praticados'),
-    ];
-
     return Card(
       elevation: 2,
       child: Padding(
@@ -225,21 +217,32 @@ class WeeklyReportScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 8.0),
+              padding: const EdgeInsets.only(left: 8.0, bottom: 8.0),
               child: Text('Resumo da Semana',
                   style: Theme.of(context).textTheme.titleLarge),
             ),
-            const SizedBox(height: 16),
+            // Primeira linha de estatísticas
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: firstRowItems,
+              children: [
+                _buildStatItem(context, Icons.check_circle,
+                    Colors.green.shade600, good.toString(), 'Bons Concluídos'),
+                _buildStatItem(context, Icons.local_fire_department,
+                    Colors.orange.shade700, streak.toString(), 'Dias em Sequência'),
+              ],
             ),
-            const SizedBox(height: 16), 
+            const SizedBox(height: 16),
+            // Segunda linha de estatísticas
             Row(
-              mainAxisAlignment: bad > 0
-                  ? MainAxisAlignment.spaceAround 
-                  : MainAxisAlignment.center,     
-              children: secondRowItems,
+              mainAxisAlignment:
+                  bad > 0 ? MainAxisAlignment.start : MainAxisAlignment.center,
+              children: [
+                _buildStatItem(context, Icons.emoji_events,
+                    Colors.purple.shade600, bestDay, 'Melhor Dia'),
+                // Adiciona o item de hábitos ruins apenas se houver
+                if (bad > 0)
+                  _buildStatItem(context, Icons.cancel, Colors.red.shade600,
+                      bad.toString(), 'Ruins Praticados'),
+              ],
             ),
           ],
         ),
@@ -249,6 +252,7 @@ class WeeklyReportScreen extends StatelessWidget {
 
   Widget _buildStatItem(
       BuildContext context, IconData icon, Color color, String value, String label) {
+    // Cada item ocupa metade do espaço da Row, graças ao Expanded.
     return Expanded(
       child: Column(
         children: [
@@ -260,9 +264,12 @@ class WeeklyReportScreen extends StatelessWidget {
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 4),
-          Text(label,
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(label,
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center),
+          ),
         ],
       ),
     );

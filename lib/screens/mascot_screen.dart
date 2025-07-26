@@ -13,7 +13,6 @@ class MascotScreen extends StatefulWidget {
 }
 
 class _MascotScreenState extends State<MascotScreen> {
-  // Estado para controlar a visibilidade dos textos nas barras de informação
   bool _showXpDetails = false;
   bool _showGoodHabitsCount = false;
   bool _showBadHabitsCount = false;
@@ -27,7 +26,6 @@ class _MascotScreenState extends State<MascotScreen> {
     _mascotGame = MascotGame(habitProvider: habitProvider);
   }
 
-  // Widget auxiliar para criar os itens interativos da barra superior
   Widget _buildTopBarInteractiveItem({
     required IconData itemIcon,
     required Color iconColor,
@@ -109,7 +107,6 @@ class _MascotScreenState extends State<MascotScreen> {
             ),
           ),
 
-          // O Consumer reconstrói apenas as barras de informação quando os dados do HabitProvider mudam.
           Consumer<HabitProvider>(
             builder: (context, habitProvider, _) {
               final currentLevel = habitProvider.currentLevel;
@@ -120,12 +117,10 @@ class _MascotScreenState extends State<MascotScreen> {
               final badHabitsDone = habitProvider.badHabitsDoneCount;
               final totalBadHabits = habitProvider.totalBadHabitsCount;
 
-              // Dados de tema e cores
               final colorScheme = Theme.of(context).colorScheme;
               const Color xpBarColor = Colors.deepPurpleAccent;
               final Color xpBarBackgroundColor = Colors.deepPurple.shade100.withAlpha((0.4 * 255).round());
 
-              // Retorna um Stack para posicionar as barras sobre a tela principal
               return Stack(
                 children: [
                   // Barra de Nível/XP no canto superior esquerdo

@@ -6,6 +6,7 @@ import '../habit_provider.dart';
 import 'mascot_screen.dart';
 import 'habits_list_screen.dart';
 import 'weekly_report_screen.dart';
+import 'outfit_store_screen.dart';
 
 class MainTabsScreen extends StatefulWidget {
   const MainTabsScreen({super.key});
@@ -24,7 +25,7 @@ class _MainTabsScreenState extends State<MainTabsScreen>
       'page': const MascotScreen(),
       'title': 'Habitóide',
       'icon': Icons.home_rounded,
-      'activeIcon': Icons.home_filled,
+      'activeIcon': Icons.pets_outlined,
     },
     {
       'page': const HabitsListScreen(),
@@ -114,9 +115,20 @@ class _MainTabsScreenState extends State<MainTabsScreen>
       appBar: AppBar(
         title: Text(_pages[_selectedPageIndex]['title'] as String),
         actions: [
-          // Ícones que só aparecem na aba de Hábitos
+          if (_selectedPageIndex == 0)
+            Tooltip(
+              message: 'Loja de Trajes',
+              child: IconButton(
+                icon: Icon(Icons.store_rounded, color: colorScheme.primary),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (ctx) => const OutfitStoreScreen()),
+                  );
+                },
+              ),
+            ),
+          
           if (_selectedPageIndex == 1) ...[
-            // NOVO: Ícone do Relatório
             Tooltip(
               message: 'Relatório Semanal',
               child: IconButton(
@@ -128,7 +140,6 @@ class _MainTabsScreenState extends State<MainTabsScreen>
                 },
               ),
             ),
-            // Ícone de Reset Diário
             Tooltip(
               message: 'Iniciar Novo Dia',
               child: IconButton(
