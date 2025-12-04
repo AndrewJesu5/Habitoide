@@ -87,7 +87,7 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 2.0,
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
@@ -108,7 +108,7 @@ class MyApp extends StatelessWidget {
           ),
           visualDensity: VisualDensity.compact,
         ),
-        dialogTheme: DialogTheme(
+        dialogTheme: DialogThemeData(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
